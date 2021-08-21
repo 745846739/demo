@@ -11,7 +11,9 @@ import java.util.Date;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class Item extends SqlObj{
+@SqlUnderline
+public class ApolloItem extends SqlObj{
+    @SqlOrder
     private Long id;
 
     @SqlValue
@@ -30,7 +32,7 @@ public class Item extends SqlObj{
     private Long namespaceId;
 
     @SqlValue
-    @SqlOrder
+    @SqlUnderline
     private Date approvalTime;
 
     @SqlType
