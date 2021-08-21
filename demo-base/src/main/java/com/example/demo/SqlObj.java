@@ -3,9 +3,8 @@ package com.example.demo;
 import org.apache.commons.lang3.StringUtils;
 
 import java.lang.reflect.Field;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class SqlObj {
     private static List<String> keyWordList = Arrays.asList("key","value");
@@ -15,13 +14,12 @@ public class SqlObj {
     }
     
     public String toInserSql() {
-        StringBuilder sb = new StringBuilder("INSERT INTO ");
         Class<? extends SqlObj> itemClass = this.getClass();
         SqlTable sqlTableAnnotation = itemClass.getAnnotation(SqlTable.class);
-        String tableName = Objects.isNull(sqlTableAnnotation)?null:sqlTableAnnotation.value();
-        tableName = processDefaultName(itemClass.getName().substring(itemClass.getName().lastIndexOf(".")+1),tableName,true);
-        tableName = processKeyWord(tableName);
+        String tableName = processTableName(itemClass, sqlTableAnnotation);
         Field[] declaredFields = itemClass.getDeclaredFields();
+
+        StringBuilder sb = new StringBuilder("INSERT INTO ");
         sb.append(tableName+"(");
         for (Field field:declaredFields){
             field.setAccessible(true);
@@ -52,9 +50,7 @@ public class SqlObj {
     public String toDeleteSql() {
         Class<? extends SqlObj> itemClass = this.getClass();
         SqlTable sqlTableAnnotation = itemClass.getAnnotation(SqlTable.class);
-        String tableName = Objects.isNull(sqlTableAnnotation)?null:sqlTableAnnotation.value();
-        tableName = processDefaultName(itemClass.getName().substring(itemClass.getName().lastIndexOf(".")+1),tableName,true);
-        tableName = processKeyWord(tableName);
+        String tableName = processTableName(itemClass, sqlTableAnnotation);
         Field[] declaredFields = itemClass.getDeclaredFields();
         StringBuilder sb = new StringBuilder("DELETE FROM ");
         sb.append(tableName+" WHERE ");
@@ -66,17 +62,22 @@ public class SqlObj {
     public String toUpdateSql() {
         Class<? extends SqlObj> itemClass = this.getClass();
         SqlTable sqlTableAnnotation = itemClass.getAnnotation(SqlTable.class);
-        String tableName = Objects.isNull(sqlTableAnnotation)?null:sqlTableAnnotation.value();
-        tableName = processDefaultName(itemClass.getName().substring(itemClass.getName().lastIndexOf(".")+1),tableName,true);
-        tableName = processKeyWord(tableName);
+        String tableName = processTableName(itemClass, sqlTableAnnotation);
         Field[] declaredFields = itemClass.getDeclaredFields();
         StringBuilder sb = new StringBuilder("UPDATE ");
         sb.append(tableName+" SET ");
         processSet(sb, declaredFields);
-        sb.append("WHERE ");
+        sb.append(" WHERE ");
         processWhere(sb, declaredFields);
         sb.append(";");
         return sb.toString();
+    }
+
+    private String processTableName(Class<? extends SqlObj> itemClass, SqlTable sqlTableAnnotation) {
+        String tableName = Objects.isNull(sqlTableAnnotation) ? null : sqlTableAnnotation.value();
+        tableName = processDefaultName(itemClass.getName().substring(itemClass.getName().lastIndexOf(".") + 1), tableName, true);
+        tableName = processKeyWord(tableName);
+        return tableName;
     }
 
     private String processColumnName(Field field, String columnName) {
@@ -119,7 +120,7 @@ public class SqlObj {
             Object value = getValueStringWithType(field);
             sb.append(columnName+" = " + value + " AND ");
         }
-        sb.delete(sb.length()-4,sb.length());
+        sb.delete(sb.length()-5,sb.length());
     }
 
     private void processWhere(StringBuilder sb, Field[] declaredFields) {
@@ -134,19 +135,41 @@ public class SqlObj {
             Object value = getValueStringWithType(field);
             sb.append(columnName + " = " + value + " AND ");
         }
-        sb.delete(sb.length() - 4, sb.length());
+        sb.delete(sb.length() - 5, sb.length());
     }
 
     private Object getValueStringWithType(Field field) {
         Object value = null;
         try {
             value = field.get(this);
-            if (field.getGenericType().toString().equals("class java.lang.String")) {
+            if (field.getType().equals(String.class)) {
                 value = "'" + field.get(this) + "'";
             }
         } catch (IllegalAccessException e) {
             e.printStackTrace();
         }
         return value;
+    }
+
+    static class SqlObjComparator implements Comparator<SqlObj>{
+        @Override
+        public int compare(SqlObj o1, SqlObj o2) {
+            Field[] declaredFields = o1.getClass().getDeclaredFields();
+            for (Field field:declaredFields) {
+                field.setAccessible(true);
+                if (!field.isAnnotationPresent(SqlOrder.class)){
+                    continue;
+                }
+                if (field.getType().equals(Date.class)){
+                    try {
+                        return ((Date)field.get(o1)).after((Date)field.get(o2))?1:-1;
+                    } catch (IllegalAccessException e) {
+                        e.printStackTrace();
+                    }
+                }
+                return 0;
+            }
+            return 0;
+        }
     }
 }

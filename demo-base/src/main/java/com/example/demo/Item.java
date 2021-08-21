@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Date;
+
 @Data
 @Builder
 @AllArgsConstructor
@@ -12,18 +14,24 @@ import lombok.NoArgsConstructor;
 public class Item extends SqlObj{
     private Long id;
 
-    @SqlValue()
+    @SqlValue
     private String name;
 
-    @SqlValue()
-    @SqlWhere()
+    @SqlValue
+    @SqlWhere
     private String key;
 
-    @SqlValue()
-    @SqlSet()
+    @SqlValue
+    @SqlSet
     private String value;
 
-    @SqlValue()
-    @SqlWhere()
+    @SqlValue
+    @SqlWhere
     private Long namespaceId;
+
+    @SqlValue
+    @SqlOrder
+    private Date approvalTime;
+
+    private String itemOperationType;
 }
