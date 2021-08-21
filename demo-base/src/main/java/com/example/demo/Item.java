@@ -33,5 +33,6 @@ public class Item extends SqlObj{
     @SqlOrder
     private Date approvalTime;
 
+    @SqlType
     private String itemOperationType;
 }

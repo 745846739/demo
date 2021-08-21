@@ -4,13 +4,12 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.lang.reflect.Field;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class SqlObj {
     private static List<String> keyWordList = Arrays.asList("key","value");
 
     public String toIdempotenceInsertSql(){
-        return this.toDeleteSql()+"\n\n"+this.toInserSql();
+        return this.toDeleteSql()+this.toInserSql();
     }
     
     public String toInserSql() {
@@ -43,7 +42,7 @@ public class SqlObj {
             sb.append(value+",");
         }
         sb.delete(sb.length()-1,sb.length());
-        sb.append(");");
+        sb.append(");\n\n");
         return sb.toString();
     }
 
@@ -55,7 +54,7 @@ public class SqlObj {
         StringBuilder sb = new StringBuilder("DELETE FROM ");
         sb.append(tableName+" WHERE ");
         processWhere(sb, declaredFields);
-        sb.append(";");
+        sb.append(";\n\n");
         return sb.toString();
     }
 
@@ -69,7 +68,7 @@ public class SqlObj {
         processSet(sb, declaredFields);
         sb.append(" WHERE ");
         processWhere(sb, declaredFields);
-        sb.append(";");
+        sb.append(";\n\n");
         return sb.toString();
     }
 
